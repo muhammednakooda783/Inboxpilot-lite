@@ -348,6 +348,28 @@ async def test_lmstudio_classifier_invalid_category_triggers_fallback():
 
 
 @pytest.mark.asyncio
+async def test_lmstudio_classifier_invalid_response_triggers_fallback():
+    def fake_create(**kwargs):  # noqa: ARG001
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content="Here is your answer: category=question confidence=0.9"
+                    )
+                )
+            ]
+        )
+
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+    classifier = LMStudioClassifier(client=fake_client, fallback=RulesClassifier())  # type: ignore[arg-type]
+    result = await classifier.classify("I want a refund, this is broken.")
+
+    assert result.category == "complaint"
+
+
+@pytest.mark.asyncio
 async def test_lmstudio_classifier_falls_back_when_unreachable():
     def fake_create(**kwargs):  # noqa: ARG001
         raise ConnectionError("LM Studio is down")

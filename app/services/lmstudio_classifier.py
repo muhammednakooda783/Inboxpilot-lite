@@ -16,6 +16,7 @@ LMSTUDIO_BASE_URL = "http://localhost:1234/v1"
 LMSTUDIO_API_KEY = "lm-studio"
 LMSTUDIO_MODEL = "openai/gpt-oss-20b"
 ALLOWED_CATEGORIES: set[str] = {"question", "complaint", "sales", "spam", "other"}
+REQUIRED_FIELDS: set[str] = {"category", "confidence", "suggested_reply"}
 
 
 class LMStudioClassifier:
@@ -50,11 +51,14 @@ class LMStudioClassifier:
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0,
-                response_format={"type": "json_object"},
+                # LM Studio OpenAI-compatible endpoint expects `text` or `json_schema`.
+                # We keep output constrained through the prompt and robust JSON extraction.
+                response_format={"type": "text"},
             )
             content = self._extract_content(completion)
-            logger.info("lmstudio_raw_output=%s", content[:300])
+            logger.debug("LM Studio raw response: %s", content[:300])
             payload = extract_first_json_object(content)
+            logger.debug("LM Studio parsed JSON: %s", payload)
             normalized = self._validate_payload(payload)
             return ClassifyResponse.model_validate(normalized), "lmstudio", True, None
         except Exception as exc:
@@ -104,6 +108,11 @@ class LMStudioClassifier:
         return content if isinstance(content, str) else "{}"
 
     def _validate_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        missing = sorted(REQUIRED_FIELDS.difference(payload.keys()))
+        if missing:
+            logger.error("lmstudio_missing_required_fields missing=%s payload=%s", missing, payload)
+            raise ValueError(f"missing required fields: {', '.join(missing)}")
+
         category_raw = payload.get("category")
         if not isinstance(category_raw, str):
             raise ValueError("category must be a string")

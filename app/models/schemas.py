@@ -5,6 +5,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 Category = Literal["question", "complaint", "sales", "spam", "other"]
+Channel = Literal["whatsapp", "email", "webchat"]
+Priority = Literal["low", "medium", "high"]
 
 
 class ClassifyRequest(BaseModel):
@@ -60,3 +62,30 @@ class InfoResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
+
+
+class CopilotRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=4000)
+    channel: Channel = "webchat"
+
+    @field_validator("text")
+    @classmethod
+    def copilot_text_cannot_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("text must not be blank")
+        return value
+
+
+class IntentResult(BaseModel):
+    category: Category
+    confidence: float = Field(..., ge=0.0, le=1.0)
+
+
+class CopilotResponse(BaseModel):
+    intent: IntentResult
+    priority: Priority
+    next_actions: list[str] = Field(..., min_length=1)
+    draft_reply: str = Field(..., min_length=1, max_length=500)
+    classifier_used: Literal["lmstudio", "rules"]
+    latency_ms: int = Field(..., ge=0)
+    request_id: str = Field(..., min_length=1)

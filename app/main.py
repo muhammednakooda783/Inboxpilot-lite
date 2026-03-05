@@ -25,11 +25,15 @@ from app.models.schemas import (
     ClassifyRequest,
     ClassifyResponse,
     ClassifyResponseWithMeta,
+    CopilotRequest,
+    CopilotResponse,
     HealthResponse,
     InfoResponse,
+    IntentResult,
     MetricsResponse,
 )
 from app.services.classifier import MessageClassifier, RulesClassifier
+from app.services.copilot import LMStudioDraftService, SupportCopilotService
 from app.services.lmstudio_classifier import LMStudioClassifier
 
 configure_logging()
@@ -46,6 +50,12 @@ app.add_middleware(
 )
 app.state.classifier = LMStudioClassifier(
     fallback=RulesClassifier(),
+    model=settings.lmstudio_model,
+    base_url=settings.lmstudio_base_url,
+    api_key=settings.lmstudio_api_key,
+    timeout_seconds=settings.lmstudio_timeout_seconds,
+)
+app.state.draft_service = LMStudioDraftService(
     model=settings.lmstudio_model,
     base_url=settings.lmstudio_base_url,
     api_key=settings.lmstudio_api_key,
@@ -235,3 +245,44 @@ async def classify_batch(payload: BatchClassifyRequest) -> BatchClassifyResponse
 
     logger.info("classify_batch_completed count=%d", len(results))
     return BatchClassifyResponse(results=results)
+
+
+@app.post("/copilot", response_model=CopilotResponse)
+async def copilot(payload: CopilotRequest, request: Request) -> CopilotResponse:
+    classifier: MessageClassifier = app.state.classifier
+    draft_service: LMStudioDraftService = app.state.draft_service
+    metrics_store: InMemoryMetrics = app.state.metrics
+    request_id = request.state.request_id
+    started_at = time.perf_counter()
+    metrics_store.increment("copilot_requests_total")
+
+    try:
+        service = SupportCopilotService(classifier=classifier, draft_service=draft_service)
+        result = await service.run(text=payload.text, channel=payload.channel)
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        metrics_store.increment(f"copilot_priority_{result.priority}_total")
+        metrics_store.increment(f"copilot_category_{result.intent.category}_total")
+        logger.info(
+            "copilot_completed category=%s priority=%s classifier=%s draft_source=%s "
+            "latency_ms=%d",
+            result.intent.category,
+            result.priority,
+            result.classifier_used,
+            result.draft_source,
+            latency_ms,
+        )
+        return CopilotResponse(
+            intent=IntentResult(
+                category=result.intent.category,
+                confidence=result.intent.confidence,
+            ),
+            priority=result.priority,
+            next_actions=result.next_actions,
+            draft_reply=result.draft_reply,
+            classifier_used=result.classifier_used,  # type: ignore[arg-type]
+            latency_ms=latency_ms,
+            request_id=request_id,
+        )
+    except Exception as exc:
+        logger.exception("copilot_failed reason=%s", type(exc).__name__)
+        raise HTTPException(status_code=500, detail="Copilot request failed") from exc
