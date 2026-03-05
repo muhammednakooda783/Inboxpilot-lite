@@ -34,7 +34,6 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
-      - name: Run tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-        run: python -m pytest -q
+      - name: Run tests (module mode)
+        run: |
+          PYTHONPATH="${GITHUB_WORKSPACE}" python -m pytest -q
