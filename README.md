@@ -203,6 +203,37 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+
+```mermaid
+flowchart TD
+A[User Message] --> B[InboxPilot Dashboard UI]
+
+B --> C[FastAPI Backend API]
+C --> D[/classify Endpoint]
+
+D --> E{Classifier Router}
+
+E -->|Primary| F[LM Studio LLM gpt-oss-20b]
+E -->|Fallback| G[Rules Classifier]
+
+F --> H[Structured JSON Response]
+G --> H
+
+H --> I[Response Validator]
+
+I --> J[API Response]
+
+J --> K[Dashboard Display]
+
+K --> L[Live Metrics]
+K --> M[Recent Activity Table]
+
+L --> N[Latency Tracking]
+L --> O[Confidence Metrics]
+
+M --> P[Classifier Used]
+M --> Q[Status + Request ID]
+
 ## Roadmap
 1. Move metrics/rate-limit state to Redis for multi-instance deployments.
 2. Add OpenTelemetry tracing and latency histograms.
