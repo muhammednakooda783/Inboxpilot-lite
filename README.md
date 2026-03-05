@@ -1,29 +1,19 @@
 # inboxpilot-lite
 
-Production-quality starter API for classifying incoming messages with an optional OpenAI path and a guaranteed rules-based fallback.
+Production-quality starter API for classifying incoming messages with a local LM Studio model and a rules-based fallback.
 
 ## Features
-- FastAPI service endpoints: `POST /classify`, `POST /classify/batch`, `GET /health`, `GET /metrics`
+- FastAPI endpoints: `POST /classify`, `POST /classify/batch`, `GET /health`, `GET /metrics`
 - Categories: `question | complaint | sales | spam | other`
-- Confidence score from `0` to `1`
-- Suggested short helpful reply
-- Request ID middleware:
-  - Generates `x-request-id` when missing
-  - Propagates request ID into logs and response headers
-- In-memory counters exposed by `/metrics`
+- Request ID middleware with `x-request-id` propagation
 - In-memory per-IP rate limiting
+- In-memory metrics counters via `/metrics`
+- Uses the OpenAI Python client against LM Studio's OpenAI-compatible API
 - Classifier selection:
-  - Uses `OpenAIClassifier` when `OPENAI_API_KEY` is configured
-  - Falls back to `RulesClassifier` otherwise (or if OpenAI call fails)
-- OpenAI path safety:
-  - Strict JSON schema contract requested from model
-  - Pydantic validation for model output
-  - Per-request timeout
-  - Retry with exponential backoff for transient failures
-- Structured-ish logging with timestamp, level, and `request_id`
-- Tests with `pytest` + `httpx`
+  - Uses `LMStudioClassifier` (OpenAI-compatible local API)
+  - Falls back to `RulesClassifier` if LM Studio is unreachable or returns invalid output
 - CI via GitHub Actions (`pytest` + `ruff`)
-- Pre-commit hooks for lint and formatting (`ruff`, `ruff-format`)
+- Pre-commit hooks (`ruff`, `ruff-format`)
 
 ## Project structure
 ```text
@@ -34,6 +24,7 @@ app/
   main.py
   models/schemas.py
   services/classifier.py
+  services/lmstudio_classifier.py
 tests/
   test_classify.py
 ```
@@ -56,23 +47,30 @@ source .venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+This installs the OpenAI Python client used for LM Studio requests.
 
 3. Configure environment:
 ```bash
 cp .env.example .env
 ```
-Set `OPENAI_API_KEY` only if you want LLM-backed classification.
 
-### Environment variables
+## Environment variables
 - `LOG_LEVEL` (default: `INFO`)
-- `OPENAI_API_KEY` (optional; if empty, rules-based classifier is used)
-- `OPENAI_MODEL` (default: `gpt-4o-mini`)
-- `OPENAI_TIMEOUT_SECONDS` (default: `8`)
-- `OPENAI_MAX_RETRIES` (default: `2`)
-- `OPENAI_RETRY_BACKOFF_SECONDS` (default: `0.4`)
+- `LMSTUDIO_BASE_URL` (default: `http://localhost:1234/v1`)
+- `LMSTUDIO_API_KEY` (default: `lm-studio`)
+- `LMSTUDIO_MODEL` (default: `openai/gpt-oss-20b`)
+- `LMSTUDIO_TIMEOUT_SECONDS` (default: `20`)
 - `RATE_LIMIT_REQUESTS` (default: `60`)
 - `RATE_LIMIT_WINDOW_SECONDS` (default: `60`)
 - `MAX_BATCH_SIZE` (default: `20`)
+
+For LM Studio:
+```env
+LMSTUDIO_BASE_URL=http://localhost:1234/v1
+LMSTUDIO_MODEL=openai/gpt-oss-20b
+```
+
+If LM Studio is not reachable, the app logs a warning and falls back to `RulesClassifier`.
 
 ## Architecture
 ```text
@@ -81,26 +79,23 @@ Client
   v
 FastAPI app (app/main.py)
   |
-  +--> Middleware:
+  +--> Middleware
   |      - request_id context + response header
   |      - per-IP rate limit
-  |      - request counters + structured logs
+  |      - counters + structured logs
   |
-  +--> Routes:
+  +--> Routes
          - GET /health
          - GET /metrics
          - POST /classify
          - POST /classify/batch
                 |
                 v
-          Classifier service (app/services/classifier.py)
+          Classifier services
                 |
-                +--> OpenAIClassifier (if OPENAI_API_KEY exists)
-                |      - strict JSON schema
-                |      - Pydantic validation
-                |      - timeout + retry/backoff
+                +--> LMStudioClassifier (app/services/lmstudio_classifier.py)
                 |
-                +--> RulesClassifier fallback
+                +--> RulesClassifier (fallback)
 ```
 
 ## Run locally
@@ -108,31 +103,9 @@ FastAPI app (app/main.py)
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Or with Make:
-```bash
-make run
-```
-
 ## Run tests
 ```bash
 pytest -q
-```
-
-Or with Make:
-```bash
-make test
-```
-
-## Docker
-Build and run with compose:
-```bash
-docker compose up --build
-```
-
-Direct Docker:
-```bash
-docker build -t inboxpilot-lite .
-docker run --rm -p 8000:8000 --env-file .env inboxpilot-lite
 ```
 
 ## API examples
@@ -152,15 +125,10 @@ Batch classify:
 ```bash
 curl -X POST http://localhost:8000/classify/batch \
   -H "Content-Type: application/json" \
-  -d "{\"texts\":[\"How can I upgrade?\", \"I need a refund\"]}"
+  -d "{\"texts\":[\"How can I upgrade?\",\"I need a refund\"]}"
 ```
 
-Metrics:
-```bash
-curl http://localhost:8000/metrics
-```
-
-Example response:
+Example classify response:
 ```json
 {
   "category": "question",
@@ -169,23 +137,7 @@ Example response:
 }
 ```
 
-Another valid response:
-```json
-{
-  "category": "complaint",
-  "confidence": 0.93,
-  "suggested_reply": "I'm sorry about this. Please share your order number so we can fix it quickly."
-}
-```
-
-## Add new categories
-1. Update category literal in `app/models/schemas.py` (`Category`).
-2. Update rule logic in `app/services/classifier.py`.
-3. If using OpenAI, update the prompt in `OpenAIClassifier._build_payload`.
-4. Add tests in `tests/test_classify.py` for the new category behavior.
-
 ## Tooling
-Run pre-commit hooks locally:
 ```bash
 pip install pre-commit
 pre-commit install
@@ -193,7 +145,7 @@ pre-commit run --all-files
 ```
 
 ## Roadmap
-1. Persist metrics and rate-limit state in Redis for multi-instance deployments.
-2. Add OpenTelemetry traces and request-level latency histograms.
-3. Add authentication + API keys per tenant.
-4. Support async job queue for large batch classification.
+1. Move metrics/rate-limit state to Redis for multi-instance deployments.
+2. Add OpenTelemetry tracing and latency histograms.
+3. Add auth and tenant-aware quotas.
+4. Add async queue support for very large batch jobs.

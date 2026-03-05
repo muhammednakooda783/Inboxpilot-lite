@@ -23,14 +23,21 @@ from app.models.schemas import (
     HealthResponse,
     MetricsResponse,
 )
-from app.services.classifier import MessageClassifier, get_classifier
+from app.services.classifier import MessageClassifier, RulesClassifier
+from app.services.lmstudio_classifier import LMStudioClassifier
 
 configure_logging()
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.app_name)
-app.state.classifier = get_classifier(settings)
+app.state.classifier = LMStudioClassifier(
+    fallback=RulesClassifier(),
+    model=settings.lmstudio_model,
+    base_url=settings.lmstudio_base_url,
+    api_key=settings.lmstudio_api_key,
+    timeout_seconds=settings.lmstudio_timeout_seconds,
+)
 app.state.metrics = InMemoryMetrics()
 app.state.rate_limiter = InMemoryRateLimiter(
     max_requests=settings.rate_limit_requests,

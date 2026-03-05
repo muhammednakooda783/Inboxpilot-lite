@@ -14,26 +14,23 @@ load_dotenv()
 class Settings(BaseModel):
     app_name: str = Field(default="inboxpilot-lite")
     log_level: str = Field(default="INFO")
-    openai_api_key: str | None = Field(default=None)
-    openai_model: str = Field(default="gpt-4o-mini")
-    openai_timeout_seconds: float = Field(default=8.0)
-    openai_max_retries: int = Field(default=2)
-    openai_retry_backoff_seconds: float = Field(default=0.4)
+    lmstudio_base_url: str = Field(default="http://localhost:1234/v1")
+    lmstudio_api_key: str = Field(default="lm-studio")
+    lmstudio_model: str = Field(default="openai/gpt-oss-20b")
+    lmstudio_timeout_seconds: float = Field(default=20.0)
     rate_limit_requests: int = Field(default=60)
     rate_limit_window_seconds: int = Field(default=60)
     max_batch_size: int = Field(default=20)
 
     @classmethod
     def from_env(cls) -> "Settings":
-        api_key = os.getenv("OPENAI_API_KEY")
         return cls(
             app_name=os.getenv("APP_NAME", "inboxpilot-lite"),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
-            openai_api_key=api_key if api_key else None,
-            openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            openai_timeout_seconds=float(os.getenv("OPENAI_TIMEOUT_SECONDS", "8")),
-            openai_max_retries=int(os.getenv("OPENAI_MAX_RETRIES", "2")),
-            openai_retry_backoff_seconds=float(os.getenv("OPENAI_RETRY_BACKOFF_SECONDS", "0.4")),
+            lmstudio_base_url=os.getenv("LMSTUDIO_BASE_URL", "http://localhost:1234/v1"),
+            lmstudio_api_key=os.getenv("LMSTUDIO_API_KEY", "lm-studio"),
+            lmstudio_model=os.getenv("LMSTUDIO_MODEL", "openai/gpt-oss-20b"),
+            lmstudio_timeout_seconds=float(os.getenv("LMSTUDIO_TIMEOUT_SECONDS", "20")),
             rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60")),
             rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
             max_batch_size=int(os.getenv("MAX_BATCH_SIZE", "20")),
