@@ -1,10 +1,10 @@
-# InboxPilot Lite - Local Support Copilot
+# AI Customer Support Triage System (InboxPilot Lite)
 
 [![CI](https://github.com/muhammednakooda783/ai-customer-support-triage-system/actions/workflows/ci.yml/badge.svg)](https://github.com/muhammednakooda783/ai-customer-support-triage-system/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Production-green)](https://fastapi.tiangolo.com/)
 
-InboxPilot Lite is a production-minded support copilot that classifies customer messages, drafts helpful replies, and gives operations visibility through a live dashboard.
+InboxPilot Lite is a production-minded support copilot that classifies customer messages, triages IT-style tickets, drafts helpful replies, and gives operations visibility through a live dashboard.
 
 It is designed for real-world reliability:
 - Uses a **local LM Studio model** for richer AI output.
@@ -54,7 +54,10 @@ FastAPI Backend (app/main.py)
   - request_id middleware
   - rate limiting
   - metrics counters
-  - /classify, /classify/batch, /copilot, /recent, /stats, /info, /health
+  - /classify, /classify/batch, /copilot
+  - /tickets/mock, /tickets/triage
+  - /review, /review/{request_id}
+  - /recent, /stats, /metrics, /info, /health
         |
         +--> LMStudioClassifier (OpenAI-compatible local endpoint)
         |        |
@@ -65,6 +68,10 @@ FastAPI Backend (app/main.py)
                  - intent -> priority + next_actions
                  - channel-aware draft replies
                  - templated fallback reply if LM drafting fails
+        |
+        +--> TicketProvider abstraction
+                 - MockTicketProvider (current)
+                 - Zendesk/Freshdesk adapter ready
         |
         +--> SQLite (request history + analytics)
 ```
@@ -115,6 +122,7 @@ LMSTUDIO_API_KEY=lm-studio
 LMSTUDIO_MODEL=openai/gpt-oss-20b
 LMSTUDIO_TIMEOUT_SECONDS=20
 REVIEW_THRESHOLD=0.70
+TICKET_PROVIDER=mock
 ```
 
 ### 2) Run backend
@@ -138,7 +146,7 @@ Open `http://localhost:5173`.
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/health` | GET | Liveness check |
-| `/info` | GET | Active classifier + model + version |
+| `/info` | GET | Active classifier + model + provider + version |
 | `/metrics` | GET | In-memory counters |
 | `/recent` | GET | Recent classified requests with filters |
 | `/stats` | GET | Aggregate metrics window |
@@ -206,6 +214,26 @@ curl -X POST http://127.0.0.1:8000/tickets/triage \
   -d '{"ticket_id":"INC-902","subject":"Refund dispute","description":"I will file a chargeback with my bank.","channel":"email"}'
 ```
 
+### Example: `/review`
+
+```bash
+curl "http://127.0.0.1:8000/review?limit=20"
+```
+
+### Example: `POST /review/{request_id}`
+
+```bash
+curl -X POST http://127.0.0.1:8000/review/<request_id> \
+  -H "Content-Type: application/json" \
+  -d '{"final_category":"complaint","final_reply":"Thanks for raising this. We have escalated your case and will update you shortly."}'
+```
+
+## Human Review Policy
+
+- `needs_review=true` when confidence is below `REVIEW_THRESHOLD` (default `0.70`).
+- Severe complaint language (for example: `chargeback`, `legal`, `lawsuit`, `fraud`, `bank`) is escalated to review even with high confidence.
+- Reviewers resolve items through `POST /review/{request_id}` with final category and reply.
+
 ## Reliability and Fallback Behavior
 
 - If LM Studio returns extra text or multiple JSON objects, the backend extracts the first valid JSON object.
@@ -239,6 +267,7 @@ app/
     classifier.py
     lmstudio_classifier.py
     copilot.py
+    ticket_provider.py
   db.py
   main.py
 frontend/
@@ -246,6 +275,7 @@ frontend/
 tests/
   test_classify.py
   test_copilot.py
+  test_tickets.py
   test_evaluate.py
 scripts/
   evaluate.py
