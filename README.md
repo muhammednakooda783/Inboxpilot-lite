@@ -204,8 +204,7 @@ pre-commit run --all-files
 ```
 
 
-```mermaid
-flowchart TD
+```flowchart TD
 A[User Message] --> B[InboxPilot Dashboard UI]
 
 B --> C[FastAPI Backend API]
