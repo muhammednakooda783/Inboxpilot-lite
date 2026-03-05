@@ -263,8 +263,7 @@ async def copilot(payload: CopilotRequest, request: Request) -> CopilotResponse:
         metrics_store.increment(f"copilot_priority_{result.priority}_total")
         metrics_store.increment(f"copilot_category_{result.intent.category}_total")
         logger.info(
-            "copilot_completed category=%s priority=%s classifier=%s draft_source=%s "
-            "latency_ms=%d",
+            "copilot_completed category=%s priority=%s classifier=%s draft_source=%s latency_ms=%d",
             result.intent.category,
             result.priority,
             result.classifier_used,
