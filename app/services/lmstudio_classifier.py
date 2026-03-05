@@ -67,7 +67,7 @@ class LMStudioClassifier:
                 )
             logger.warning(message, type(exc).__name__)
             fallback_result = await self.fallback.classify(text)
-            return fallback_result, "rules", False, str(exc)[:300]
+            return fallback_result, "rules", True, str(exc)[:300]
 
     def _build_prompt(self, user_text: str) -> str:
         return (
