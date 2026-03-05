@@ -16,6 +16,8 @@ class Settings(BaseModel):
     openai_api_key: str | None = Field(default=None)
     openai_model: str = Field(default="gpt-4o-mini")
     openai_timeout_seconds: float = Field(default=8.0)
+    openai_max_retries: int = Field(default=2)
+    openai_retry_backoff_seconds: float = Field(default=0.4)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -26,6 +28,10 @@ class Settings(BaseModel):
             openai_api_key=api_key if api_key else None,
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             openai_timeout_seconds=float(os.getenv("OPENAI_TIMEOUT_SECONDS", "8")),
+            openai_max_retries=int(os.getenv("OPENAI_MAX_RETRIES", "2")),
+            openai_retry_backoff_seconds=float(
+                os.getenv("OPENAI_RETRY_BACKOFF_SECONDS", "0.4")
+            ),
         )
 
 
@@ -54,4 +60,3 @@ def configure_logging(level: str | None = None) -> None:
     handler.addFilter(RequestIdFilter())
     root_logger.addHandler(handler)
     root_logger.setLevel(getattr(logging, desired_level, logging.INFO))
-

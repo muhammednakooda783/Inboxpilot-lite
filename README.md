@@ -10,6 +10,11 @@ Production-quality starter API for classifying incoming messages with an optiona
 - Classifier selection:
   - Uses `OpenAIClassifier` when `OPENAI_API_KEY` is configured
   - Falls back to `RulesClassifier` otherwise (or if OpenAI call fails)
+- OpenAI path safety:
+  - Strict JSON schema contract requested from model
+  - Pydantic validation for model output
+  - Per-request timeout
+  - Retry with exponential backoff for transient failures
 - Structured-ish logging with timestamp, level, and `request_id`
 - Tests with `pytest` + `httpx`
 
@@ -48,6 +53,14 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 Set `OPENAI_API_KEY` only if you want LLM-backed classification.
+
+### Environment variables
+- `LOG_LEVEL` (default: `INFO`)
+- `OPENAI_API_KEY` (optional; if empty, rules-based classifier is used)
+- `OPENAI_MODEL` (default: `gpt-4o-mini`)
+- `OPENAI_TIMEOUT_SECONDS` (default: `8`)
+- `OPENAI_MAX_RETRIES` (default: `2`)
+- `OPENAI_RETRY_BACKOFF_SECONDS` (default: `0.4`)
 
 ## Run locally
 ```bash
@@ -100,6 +113,15 @@ Example response:
   "category": "question",
   "confidence": 0.84,
   "suggested_reply": "Thanks for your question. Share a bit more detail and I can help quickly."
+}
+```
+
+Another valid response:
+```json
+{
+  "category": "complaint",
+  "confidence": 0.93,
+  "suggested_reply": "I'm sorry about this. Please share your order number so we can fix it quickly."
 }
 ```
 
