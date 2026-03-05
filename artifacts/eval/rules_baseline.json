@@ -1,0 +1,82 @@
+{
+  "timestamp_utc": "2026-03-05T11:55:53.304763+00:00",
+  "mode": "rules",
+  "total_examples": 40,
+  "accuracy": 0.85,
+  "macro_f1": 0.8525,
+  "avg_latency_ms": 0.0,
+  "avg_confidence": 0.811,
+  "ok_rate": 1.0,
+  "fallback_rate": 1.0,
+  "lmstudio_used_rate": 0.0,
+  "per_category": {
+    "question": {
+      "support": 8,
+      "precision": 0.8889,
+      "recall": 1.0,
+      "f1": 0.9412
+    },
+    "complaint": {
+      "support": 8,
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1": 0.8571
+    },
+    "sales": {
+      "support": 8,
+      "precision": 1.0,
+      "recall": 0.875,
+      "f1": 0.9333
+    },
+    "spam": {
+      "support": 8,
+      "precision": 1.0,
+      "recall": 0.625,
+      "f1": 0.7692
+    },
+    "other": {
+      "support": 8,
+      "precision": 0.6154,
+      "recall": 1.0,
+      "f1": 0.7619
+    }
+  },
+  "confusion_matrix": {
+    "question": {
+      "question": 8,
+      "complaint": 0,
+      "sales": 0,
+      "spam": 0,
+      "other": 0
+    },
+    "complaint": {
+      "question": 0,
+      "complaint": 6,
+      "sales": 0,
+      "spam": 0,
+      "other": 2
+    },
+    "sales": {
+      "question": 1,
+      "complaint": 0,
+      "sales": 7,
+      "spam": 0,
+      "other": 0
+    },
+    "spam": {
+      "question": 0,
+      "complaint": 0,
+      "sales": 0,
+      "spam": 5,
+      "other": 3
+    },
+    "other": {
+      "question": 0,
+      "complaint": 0,
+      "sales": 0,
+      "spam": 0,
+      "other": 8
+    }
+  },
+  "sample_errors": []
+}

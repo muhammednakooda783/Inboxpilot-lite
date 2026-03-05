@@ -22,12 +22,20 @@ app/
   core/config.py
   core/metrics.py
   core/rate_limit.py
+  db.py
   main.py
   models/schemas.py
   services/classifier.py
   services/lmstudio_classifier.py
+data/
+  eval_dataset.jsonl
+scripts/
+  evaluate.py
+artifacts/
+  eval/rules_baseline.json
 tests/
   test_classify.py
+  test_evaluate.py
 ```
 
 ## Setup
@@ -113,6 +121,33 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 pytest -q
 ```
+
+## Evaluation Harness
+Run repeatable offline evaluation with a labeled JSONL dataset:
+
+```bash
+python scripts/evaluate.py --mode rules --output artifacts/eval/rules_baseline.json
+python scripts/evaluate.py --mode lmstudio --output artifacts/eval/lmstudio_latest.json
+```
+
+Dataset:
+- `data/eval_dataset.jsonl` (40 labeled examples, balanced across 5 categories)
+
+Rules baseline (from `artifacts/eval/rules_baseline.json`):
+
+| Metric | Value |
+|---|---|
+| Accuracy | 0.85 |
+| Macro F1 | 0.8525 |
+| Avg confidence | 0.811 |
+| Total examples | 40 |
+
+Per-category F1:
+- `question`: 0.9412
+- `complaint`: 0.8571
+- `sales`: 0.9333
+- `spam`: 0.7692
+- `other`: 0.7619
 
 ## API examples
 Health:

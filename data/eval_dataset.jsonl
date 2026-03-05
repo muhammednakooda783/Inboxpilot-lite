@@ -1,0 +1,40 @@
+{"text":"How do I reset my password?","category":"question"}
+{"text":"Where can I download my invoices?","category":"question"}
+{"text":"Can I change from monthly to annual billing?","category":"question"}
+{"text":"What is your support response time?","category":"question"}
+{"text":"Is there an API for exporting messages?","category":"question"}
+{"text":"Do you have a mobile app?","category":"question"}
+{"text":"How can I invite a teammate to my workspace?","category":"question"}
+{"text":"Can someone help me set up webhooks?","category":"question"}
+{"text":"The app keeps crashing when I open it.","category":"complaint"}
+{"text":"I want a refund. The item is broken.","category":"complaint"}
+{"text":"I am unhappy with the service and need this fixed.","category":"complaint"}
+{"text":"My order arrived damaged and late.","category":"complaint"}
+{"text":"Cancellation did not work and I was charged again.","category":"complaint"}
+{"text":"This is terrible, nothing is working.","category":"complaint"}
+{"text":"I requested a cancellation but billing still continued.","category":"complaint"}
+{"text":"The latest update broke our workflow.","category":"complaint"}
+{"text":"How much does it cost per user?","category":"sales"}
+{"text":"Can I get a quote for 100 seats?","category":"sales"}
+{"text":"Do you have enterprise pricing?","category":"sales"}
+{"text":"Is this available in South Africa for business teams?","category":"sales"}
+{"text":"We want to buy annual licenses for our company.","category":"sales"}
+{"text":"Any discount for bulk orders?","category":"sales"}
+{"text":"Please share pricing for 250 users.","category":"sales"}
+{"text":"I want to know the price for bulk orders.","category":"sales"}
+{"text":"Win a free iPhone click here now","category":"spam"}
+{"text":"Guaranteed profit in 24 hours, join now","category":"spam"}
+{"text":"You have won the lottery, send your bank details","category":"spam"}
+{"text":"Free money waiting for you","category":"spam"}
+{"text":"Click here for a crypto giveaway","category":"spam"}
+{"text":"Earn passive income instantly with this secret method","category":"spam"}
+{"text":"Limited-time offer, claim your reward link","category":"spam"}
+{"text":"Hot investment tip, guaranteed returns","category":"spam"}
+{"text":"Hello","category":"other"}
+{"text":"Thanks team","category":"other"}
+{"text":"Just checking in","category":"other"}
+{"text":"Good morning","category":"other"}
+{"text":"FYI we completed the migration yesterday.","category":"other"}
+{"text":"Sharing an internal update from our side.","category":"other"}
+{"text":"Noted, will follow up later.","category":"other"}
+{"text":"Hi there","category":"other"}
