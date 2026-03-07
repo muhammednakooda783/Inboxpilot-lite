@@ -285,6 +285,19 @@ artifacts/
   eval/
 ```
 
+## Design Trade-offs
+
+These decisions were made deliberately — each one is a known trade-off, not an oversight.
+
+| Decision | What was chosen | What was ruled out | Why |
+|---|---|---|---|
+| **AI provider** | LM Studio (local model) | OpenAI / Anthropic API | Keeps the project fully runnable at zero cost. The OpenAI-compatible client means swapping to a real API is a one-line env change. |
+| **Authentication** | None | JWT / API keys | This is a portfolio project demonstrating AI triage logic, not an auth system. Adding auth would obscure the actual focus. |
+| **Metrics storage** | In-memory counters | Prometheus / external TSDB | There is no persistent traffic to measure. In-memory is honest for a local demo; the `/metrics` endpoint is structured so a Prometheus exporter could be dropped in. |
+| **Database** | SQLite (stdlib) | PostgreSQL / managed DB | Zero infrastructure cost, zero setup friction. The db layer is isolated in `app/db.py` so a swap is straightforward. |
+| **Deployment** | Local only | Render / Fly.io / Railway | No spend. The Dockerfile and `docker-compose.yml` mean it is ready to deploy the moment that changes. |
+| **Ticket provider** | MockTicketProvider | Zendesk / Freshdesk | Demonstrates the abstraction pattern (`TicketProvider` protocol) without coupling to a paid SaaS account. |
+
 ## Roadmap
 
 1. Add authentication and role-based dashboard access.
